@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>チーム成績</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ------------------------------------------------------------ 色・文字 */
+:root {
+  --paper: #f3f7f8;
+  --surface: #ffffff;
+  --ink: #13294b;
+  --muted: #5a6b80;
+  --line: #d3e0e6;
+  --aqua: #0f8c82;
+  --aqua-soft: #d6f0ec;
+  --on-aqua: #ffffff;
+  --num: "Barlow Condensed", "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --body: "Zen Kaku Gothic New", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0e1a2b; --surface: #13233a; --ink: #e6eef4; --muted: #93a4b8;
+    --line: #26384f; --aqua: #4cc7b9; --aqua-soft: #173d43; --on-aqua: #0e1a2b;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0e1a2b; --surface: #13233a; --ink: #e6eef4; --muted: #93a4b8;
+  --line: #26384f; --aqua: #4cc7b9; --aqua-soft: #173d43; --on-aqua: #0e1a2b;
+}
+*, *::before, *::after { box-sizing: inherit; }
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font-family: var(--body); font-size: 15px; line-height: 1.7;
+  -webkit-text-size-adjust: 100%;
+}
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--aqua); outline-offset: 2px; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+main.wrap { padding-bottom: 48px; }
+
+/* ------------------------------------------------------------ ヘッダー */
+header.site { padding: 28px 0 8px; }
+header.site .wrap { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 20px; }
+.team { margin: 0; font-size: clamp(1.5rem, 4vw, 2.1rem); font-weight: 700; letter-spacing: .02em; line-height: 1.3; }
+.team a { text-decoration: none; }
+.updated { margin: 0; color: var(--muted); font-size: .85rem; }
+
+nav.tabs { display: flex; gap: 4px; margin-top: 18px; border-bottom: 2px solid var(--ink); }
+nav.tabs a {
+  padding: 8px 18px 6px; text-decoration: none; font-weight: 700; color: var(--muted);
+  border: 2px solid transparent; border-bottom: none; border-radius: 6px 6px 0 0; margin-bottom: -2px;
+}
+nav.tabs a[aria-current="page"] { color: var(--ink); background: var(--surface); border-color: var(--ink); border-bottom: 2px solid var(--surface); }
+
+/* ------------------------------------------------------------ 期間 (スコアボード) */
+.board {
+  display: flex; margin: 22px 0 0; overflow-x: auto;
+  border: 2px solid var(--ink); border-radius: 4px; background: var(--surface);
+}
+.board button {
+  flex: 1 0 64px; min-width: 64px; appearance: none; border: 0; border-right: 1px solid var(--line);
+  background: none; color: var(--ink); cursor: pointer; padding: 6px 4px 8px; font-family: var(--body);
+  display: flex; flex-direction: column; align-items: center; gap: 0;
+}
+.board button:last-child { border-right: 0; }
+.board button.total { flex-basis: 96px; border-right: 2px solid var(--ink); }
+.board .yr { font-size: .7rem; color: var(--muted); min-height: 1.1em; line-height: 1.1; }
+.board .m { font-family: var(--num); font-weight: 700; font-size: 1.7rem; line-height: 1.05; }
+.board .m small { font-family: var(--body); font-size: .8rem; font-weight: 500; margin-left: 1px; }
+.board .g { font-size: .72rem; color: var(--muted); }
+.board button[aria-pressed="true"] { background: var(--aqua); color: var(--on-aqua); }
+.board button[aria-pressed="true"] .yr,
+.board button[aria-pressed="true"] .g { color: var(--on-aqua); opacity: .85; }
+.board button:hover:not([aria-pressed="true"]) { background: var(--aqua-soft); }
+
+/* ------------------------------------------------------------ リーダー */
+.leaders { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin: 26px 0 8px; border-top: 1px solid var(--line); }
+.leader { padding: 14px 16px 12px; border-right: 1px solid var(--line); }
+.leader:last-child { border-right: 0; }
+.leader h3 { margin: 0; font-size: .85rem; font-weight: 700; color: var(--muted); }
+.leader .top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 10px; margin-top: 2px; }
+.leader .val { font-family: var(--num); font-weight: 700; font-size: 3rem; line-height: 1; color: var(--aqua); font-variant-numeric: tabular-nums; }
+.leader .who { font-weight: 700; white-space: nowrap; }
+.leader ol { list-style: none; margin: 6px 0 0; padding: 0; font-size: .85rem; color: var(--muted); }
+.leader ol li { display: flex; justify-content: space-between; gap: 8px; }
+.leader ol .n { font-family: var(--num); font-size: 1rem; color: var(--ink); }
+.leader .none { color: var(--muted); font-size: .9rem; margin: 8px 0 0; }
+.leader a { text-decoration: none; }
+.leader a:hover { text-decoration: underline; }
+
+/* ------------------------------------------------------------ 表 */
+.controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin: 20px 0 10px; }
+.controls label { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.controls input { width: 18px; height: 18px; accent-color: var(--aqua); }
+.controls .note { color: var(--muted); font-size: .85rem; }
+
+.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); }
+table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: .9rem; }
+th, td { padding: 7px 10px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--line); }
+thead th { position: sticky; top: 0; background: var(--surface); font-weight: 700; font-size: .8rem; color: var(--muted); border-bottom: 2px solid var(--ink); z-index: 1; }
+td { font-family: var(--num); font-size: 1.05rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+th.l, td.l { text-align: left; font-family: var(--body); font-size: .9rem; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover td { background: var(--aqua-soft); }
+.sticky { position: sticky; left: 0; background: var(--surface); z-index: 2; border-right: 1px solid var(--line); }
+thead .sticky { z-index: 3; }
+td.key { font-weight: 700; color: var(--aqua); }
+th button { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; }
+th button:focus-visible { outline: 2px solid var(--aqua); outline-offset: 2px; }
+th[aria-sort] { color: var(--ink); }
+th[aria-sort="descending"] button::after { content: "▼"; font-size: .6rem; }
+th[aria-sort="ascending"] button::after { content: "▲"; font-size: .6rem; }
+td.l a { font-weight: 700; text-decoration: none; }
+td.l a:hover { text-decoration: underline; }
+tr.sub td { color: var(--muted); }
+.empty { padding: 28px; text-align: center; color: var(--muted); font-family: var(--body); }
+
+/* ------------------------------------------------------------ 選手ページ */
+.back { display: inline-block; margin: 20px 0 0; font-size: .9rem; color: var(--muted); }
+.player-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin: 10px 0 0; }
+.player-head h2 { margin: 0; font-size: clamp(1.6rem, 5vw, 2.4rem); line-height: 1.2; }
+.switch { display: inline-flex; border: 2px solid var(--ink); border-radius: 4px; overflow: hidden; }
+.switch a { padding: 3px 14px; text-decoration: none; font-weight: 700; font-size: .9rem; }
+.switch a[aria-current="page"] { background: var(--ink); color: var(--paper); }
+.statline { display: flex; flex-wrap: wrap; margin: 18px 0 0; border-top: 2px solid var(--ink); border-bottom: 1px solid var(--line); }
+.statline div { padding: 10px 22px 10px 0; margin-right: 22px; }
+.statline dt { font-size: .8rem; color: var(--muted); font-weight: 700; }
+.statline dd { margin: 0; font-family: var(--num); font-size: 2.2rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.statline div:first-child dd { color: var(--aqua); }
+h3.sec { margin: 34px 0 10px; font-size: 1.1rem; }
+.metrics { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+.metrics button {
+  appearance: none; border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  font: inherit; font-size: .85rem; padding: 3px 12px; border-radius: 999px; cursor: pointer;
+}
+.metrics button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.chart { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 8px 8px 2px; }
+.chart svg { display: block; width: 100%; height: auto; }
+.chart .grid { stroke: var(--line); stroke-width: 1; }
+.chart .axis { fill: var(--muted); font-size: 12px; font-family: var(--body); }
+.chart .line { fill: none; stroke: var(--aqua); stroke-width: 2.5; stroke-linejoin: round; }
+.chart .dot { fill: var(--surface); stroke: var(--aqua); stroke-width: 2.5; }
+.chart .lbl { fill: var(--ink); font-size: 13px; font-family: var(--num); font-weight: 600; text-anchor: middle; }
+
+.error { margin: 40px 0; padding: 20px 22px; border: 2px solid var(--ink); border-radius: 4px; background: var(--surface); }
+.error h2 { margin: 0 0 6px; font-size: 1.1rem; }
+.error code { background: var(--aqua-soft); padding: 1px 6px; border-radius: 3px; }
+
+.lock { max-width: 420px; margin: 48px auto; padding: 24px 24px 18px; border: 2px solid var(--ink); border-radius: 4px; background: var(--surface); }
+.lock h2 { margin: 0 0 4px; font-size: 1.15rem; }
+.lock p { margin: 0 0 14px; color: var(--muted); font-size: .9rem; }
+.lock label { display: block; font-weight: 700; font-size: .85rem; margin-bottom: 4px; }
+.lock-row { display: flex; gap: 8px; }
+.lock input {
+  flex: 1; min-width: 0; font: inherit; font-size: 1rem; padding: 8px 10px; color: var(--ink);
+  background: var(--paper); border: 1px solid var(--line); border-radius: 4px;
+}
+.lock button {
+  appearance: none; border: 0; border-radius: 4px; padding: 8px 18px; cursor: pointer;
+  font: inherit; font-weight: 700; background: var(--aqua); color: var(--on-aqua);
+}
+.lock button:disabled { opacity: .6; cursor: wait; }
+.lock .lock-msg { margin: 10px 0 0; min-height: 1.5em; color: #c0392b; }
+:root[data-theme="dark"] .lock .lock-msg { color: #ff8a80; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .lock .lock-msg { color: #ff8a80; } }
+
+
+@media (max-width: 760px) {
+  .leaders { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .leader:nth-child(2) { border-right: 0; }
+  .leader:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+  .leader .val { font-size: 2.4rem; }
+  .wrap { padding: 0 14px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .board button, .metrics button { transition: background-color .15s; }
+}
+</style>
+</head>
+<body>
+<header class="site">
+  <div class="wrap">
+    <h1 class="team"><a href="#/batting" id="team-name">チーム成績</a></h1>
+    <p class="updated" id="updated"></p>
+  </div>
+  <div class="wrap">
+    <nav class="tabs" aria-label="成績の種類">
+      <a href="#/batting" data-tab="bat">打撃成績</a>
+      <a href="#/pitching" data-tab="pit">投手成績</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap" id="app" aria-live="polite"></main>
+
+<script>
+/* ============================================================
+   設定 — チームに合わせてここだけ変更してください
+   ============================================================ */
+const CONFIG = {
+  teamName: "横浜アクアマリンズ",
+  dataDir: "players",   // 暗号化前の成績データのフォルダ
+  qualifyPA: 1.0,       // 規定打席   = チーム試合数 × この値
+  qualifyIP: 0.5,       // 規定投球回 = チーム試合数 × この値
+  encryptedFile: "players.enc", // 暗号化した成績データ。無い場合は dataDir の CSV を直接読む
+};
+
+/* ============================================================
+   CSV 読み込み
+   ============================================================ */
+function parseCSV(text) {
+  text = text.replace(/^\uFEFF/, "");
+  const rows = []; let row = [], field = "", quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (quoted) {
+      if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else quoted = false; }
+      else field += c;
+    } else if (c === '"') quoted = true;
+    else if (c === ",") { row.push(field); field = ""; }
+    else if (c === "\n") { row.push(field); rows.push(row); row = []; field = ""; }
+    else if (c !== "\r") field += c;
+  }
+  if (field !== "" || row.length) { row.push(field); rows.push(row); }
+  const header = rows.shift() || [];
+  return rows.filter(r => r.some(v => v !== ""))
+             .map(r => Object.fromEntries(header.map((h, i) => [h, r[i] ?? ""])));
+}
+const urlOf = path => path.split("/").map(encodeURIComponent).join("/");
+async function getText(path) {
+  if (state.files) {
+    if (path in state.files) return state.files[path];
+    throw new Error(`${path} が暗号化データに含まれていません`);
+  }
+  const res = await fetch(urlOf(path), { cache: "no-cache" });
+  if (!res.ok) throw new Error(`${path} を読み込めませんでした (HTTP ${res.status})`);
+  return res.text();
+}
+const loadCSV = async path => parseCSV(await getText(path));
+
+/* ============================================================
+   暗号化データの復号
+   ============================================================ */
+const fromB64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function decryptBundle(enc, password) {
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
+  const key = await crypto.subtle.deriveKey(
+    { name: "PBKDF2", hash: "SHA-256", salt: fromB64(enc.salt), iterations: enc.iter },
+    base, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+  let plain;
+  try {
+    plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: fromB64(enc.iv) }, key, fromB64(enc.ct));
+  } catch { return null; }   // パスワード違い
+  const stream = new Blob([plain]).stream().pipeThrough(new DecompressionStream("gzip"));
+  return JSON.parse(await new Response(stream).text());
+}
+const PW_KEY = "aqua-stats-pw";
+const session = {
+  get() { try { return sessionStorage.getItem(PW_KEY); } catch { return null; } },
+  set(v) { try { v == null ? sessionStorage.removeItem(PW_KEY) : sessionStorage.setItem(PW_KEY, v); } catch {} },
+};
+function askPassword(enc, failed) {
+  document.getElementById("app").innerHTML = `
+    <form class="lock" id="lock">
+      <h2>パスワードを入力してください</h2>
+      <p>このページはチーム関係者向けです。</p>
+      <label for="pw">パスワード</label>
+      <div class="lock-row">
+        <input id="pw" type="password" autocomplete="current-password" required autofocus>
+        <button type="submit">表示</button>
+      </div>
+      <p class="lock-msg" id="lock-msg" role="alert">${failed ? "パスワードが違います。" : ""}</p>
+    </form>`;
+  return new Promise(resolve => {
+    const form = document.getElementById("lock");
+    form.addEventListener("submit", async e => {
+      e.preventDefault();
+      const pw = form.pw.value, btn = form.querySelector("button"), msg = document.getElementById("lock-msg");
+      btn.disabled = true; msg.textContent = "確認しています…";
+      const files = await decryptBundle(enc, pw);
+      btn.disabled = false;
+      if (!files) { msg.textContent = "パスワードが違います。"; form.pw.select(); return; }
+      session.set(pw);
+      resolve(files);
+    });
+  });
+}
+async function unlock() {
+  let enc;
+  try { enc = JSON.parse(await getText(CONFIG.encryptedFile)); }
+  catch { return; }   // 暗号化ファイルが無ければ CSV をそのまま読む
+  const saved = session.get();
+  let files = saved ? await decryptBundle(enc, saved) : null;
+  if (!files) { session.set(null); files = await askPassword(enc, false); }
+  state.files = files;
+}
+
+/* ============================================================
+   表示用ヘルパー
+   ============================================================ */
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+function num(v) {
+  if (v === "" || v == null) return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+function fmt(v, type) {
+  if (type === "text" || type === "name") return esc(v);
+  const n = num(v);
+  if (n == null) return "-";
+  if (type === "rate3") return n < 1 ? n.toFixed(3).replace(/^0/, "") : n.toFixed(3);
+  if (type === "rate2") return n.toFixed(2);
+  return Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100);
+}
+const monthNum = m => Number(String(m).slice(5, 7));
+const monthYear = m => String(m).slice(0, 4);
+const shortName = n => String(n).replace(/[\s　]+/g, " ").trim();
+const KIND = { bat: { dir: "打者", label: "打撃" }, pit: { dir: "投手", label: "投球" } };
+
+/* ============================================================
+   状態
+   ============================================================ */
+const state = {
+  meta: null, bat: [], pit: [], batM: [], pitM: [], months: [],
+  period: "通算", qualifiedOnly: false,
+  sort: { bat: { key: "打席", dir: -1 }, pit: { key: "アウト数", dir: -1 } },
+  metric: { bat: "打率", pit: null },
+  playerCache: new Map(),
+  eraKey: "防御率(7回)", k9Key: "奪三振率(7回)",
+  files: null, ready: false,
+};
+
+/* ============================================================
+   列の定義
+   ============================================================ */
+function batCols() {
+  return [
+    { key: "選手名", label: "選手", type: "name" },
+    { key: "打率", type: "rate3", key2: true },
+    { key: "試合" }, { key: "打席" }, { key: "打数" }, { key: "安打" },
+    { key: "二塁打" }, { key: "三塁打" }, { key: "本", label: "本塁打" },
+    { key: "打点" }, { key: "得点" }, { key: "三振" }, { key: "四球" }, { key: "死球" },
+    { key: "犠打" }, { key: "犠飛" }, { key: "盗塁" }, { key: "失策" },
+    { key: "出塁率", type: "rate3" }, { key: "長打率", type: "rate3" },
+    { key: "OPS", type: "rate3" }, { key: "得点圏打率", label: "得点圏", type: "rate3" },
+  ];
+}
+function pitCols() {
+  return [
+    { key: "選手名", label: "選手", type: "name" },
+    { key: state.eraKey, label: "防御率", type: "rate2", key2: true, asc: true },
+    { key: "登板" }, { key: "先発" }, { key: "勝" }, { key: "敗" }, { key: "H" }, { key: "S" },
+    { key: "完投" }, { key: "完封" },
+    { key: "投球回", type: "text", sortKey: "アウト数" },
+    { key: "投球数" }, { key: "被安打" }, { key: "被本塁打" }, { key: "奪三振" },
+    { key: "与四球" }, { key: "与死球" }, { key: "失点" }, { key: "自責点" },
+    { key: "WHIP", type: "rate2", asc: true },
+    { key: state.k9Key, label: "奪三振率", type: "rate2" },
+  ];
+}
+
+/* ============================================================
+   規定到達の判定
+   ============================================================ */
+function teamGames(period) {
+  const m = state.meta;
+  if (!m) return null;
+  return period === "通算" ? m.team_games : (m.monthly_games?.[period] ?? null);
+}
+function isQualified(kind, row, games) {
+  if (!games) return true;
+  return kind === "bat"
+    ? (num(row["打席"]) ?? 0) >= games * CONFIG.qualifyPA
+    : (num(row["アウト数"]) ?? 0) >= games * CONFIG.qualifyIP * 3;
+}
+function qualifyText(kind, games) {
+  if (!games) return "";
+  if (kind === "bat") return `規定打席 ${Math.ceil(games * CONFIG.qualifyPA)}`;
+  const outs = Math.ceil(games * CONFIG.qualifyIP * 3);
+  return `規定投球回 ${Math.floor(outs / 3)}回${outs % 3 ? ` ${outs % 3}/3` : ""}`;
+}
+
+/* ============================================================
+   並べ替え
+   ============================================================ */
+function sortRows(rows, key, dir) {
+  return [...rows].sort((a, b) => {
+    const x = num(a[key]), y = num(b[key]);
+    if (x == null && y == null) return 0;
+    if (x == null) return 1;
+    if (y == null) return -1;
+    return (x - y) * dir;
+  });
+}
+
+/* ============================================================
+   画面: 期間の切り替え (スコアボード)
+   ============================================================ */
+function boardHTML() {
+  const g = teamGames("通算");
+  let prevYear = null;
+  const cells = state.months.map(m => {
+    const y = monthYear(m);
+    const showYear = y !== prevYear; prevYear = y;
+    const games = teamGames(m);
+    return `<button type="button" data-period="${esc(m)}" aria-pressed="${state.period === m}" title="${esc(m)}">
+      <span class="yr">${showYear ? esc(y) : ""}</span>
+      <span class="m">${monthNum(m)}<small>月</small></span>
+      <span class="g">${games != null ? `${games}試合` : ""}</span></button>`;
+  }).join("");
+  return `<div class="board" role="group" aria-label="期間">
+    <button type="button" class="total" data-period="通算" aria-pressed="${state.period === "通算"}">
+      <span class="yr"></span><span class="m">通算</span>
+      <span class="g">${g != null ? `${g}試合` : ""}</span></button>${cells}</div>`;
+}
+
+/* ============================================================
+   画面: リーダー
+   ============================================================ */
+function leadersHTML(kind, rows, games) {
+  const defs = kind === "bat"
+    ? [{ label: "打率", key: "打率", type: "rate3", qual: true },
+       { label: "本塁打", key: "本" }, { label: "打点", key: "打点" }, { label: "盗塁", key: "盗塁" }]
+    : [{ label: "防御率", key: state.eraKey, type: "rate2", qual: true, asc: true },
+       { label: "勝利", key: "勝" }, { label: "奪三振", key: "奪三振" },
+       { label: "WHIP", key: "WHIP", type: "rate2", qual: true, asc: true }];
+  return `<section class="leaders" aria-label="部門別トップ">${defs.map(d => {
+    let list = rows.filter(r => num(r[d.key]) != null);
+    if (d.qual) list = list.filter(r => isQualified(kind, r, games));
+    else list = list.filter(r => num(r[d.key]) > 0);
+    list = sortRows(list, d.key, d.asc ? 1 : -1).slice(0, 3);
+    if (!list.length) return `<div class="leader"><h3>${d.label}</h3><p class="none">${d.qual ? "規定到達者なし" : "該当者なし"}</p></div>`;
+    const [top, ...rest] = list;
+    return `<div class="leader"><h3>${d.label}</h3>
+      <div class="top"><span class="val">${fmt(top[d.key], d.type)}</span>
+      <a class="who" href="${playerHref(kind, top["選手名"])}">${esc(shortName(top["選手名"]))}</a></div>
+      <ol>${rest.map(r => `<li><a href="${playerHref(kind, r["選手名"])}">${esc(shortName(r["選手名"]))}</a><span class="n">${fmt(r[d.key], d.type)}</span></li>`).join("")}</ol></div>`;
+  }).join("")}</section>`;
+}
+
+/* ============================================================
+   表の描画 (一覧・選手ページ共通)
+   ============================================================ */
+function tableHTML(cols, rows, { kind, sortable = false, sort = null } = {}) {
+  if (!rows.length) return `<div class="scroll"><p class="empty">この期間の成績はありません。</p></div>`;
+  const head = cols.map((c, i) => {
+    const label = esc(c.label || c.key);
+    const cls = [c.type === "name" || c.type === "text-l" ? "l" : "", i === 0 ? "sticky" : ""].join(" ").trim();
+    const sk = c.sortKey || c.key;
+    const aria = sortable && sort && sort.key === sk ? ` aria-sort="${sort.dir < 0 ? "descending" : "ascending"}"` : "";
+    const inner = sortable && c.type !== "name" ? `<button type="button" data-sort="${esc(sk)}" data-asc="${c.asc ? 1 : 0}">${label}</button>` : label;
+    return `<th scope="col" class="${cls}"${aria}>${inner}</th>`;
+  }).join("");
+  const body = rows.map(r => `<tr${r.__sub ? ' class="sub"' : ""}>${cols.map((c, i) => {
+    const cls = [c.type === "name" || c.type === "text-l" ? "l" : "", i === 0 ? "sticky" : "", c.key2 ? "key" : ""].join(" ").trim();
+    let v = c.type === "text-l" ? esc(r[c.key]) : fmt(r[c.key], c.type);
+    if (c.type === "name" && kind) v = `<a href="${playerHref(kind, r[c.key])}">${esc(shortName(r[c.key]))}</a>`;
+    if (c.render) v = c.render(r);
+    return `<td class="${cls}">${v}</td>`;
+  }).join("")}</tr>`).join("");
+  return `<div class="scroll"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+}
+
+/* ============================================================
+   画面: 一覧
+   ============================================================ */
+function renderList(kind) {
+  const all = state.period === "通算"
+    ? state[kind]
+    : state[kind + "M"].filter(r => r["月"] === state.period);
+  const games = teamGames(state.period);
+  const rows = state.qualifiedOnly && games ? all.filter(r => isQualified(kind, r, games)) : all;
+  const s = state.sort[kind];
+  const qText = qualifyText(kind, games);
+  document.getElementById("app").innerHTML = `
+    ${boardHTML()}
+    ${leadersHTML(kind, all, games)}
+    <div class="controls">
+      <label><input type="checkbox" id="qual" ${state.qualifiedOnly ? "checked" : ""} ${games ? "" : "disabled"}>
+        ${kind === "bat" ? "規定打席" : "規定投球回"}に達した選手だけ表示</label>
+      <span class="note">${qText ? `${esc(qText)}　` : ""}${rows.length}人</span>
+    </div>
+    ${tableHTML(kind === "bat" ? batCols() : pitCols(), sortRows(rows, s.key, s.dir), { kind, sortable: true, sort: s })}`;
+}
+
+/* ============================================================
+   画面: 選手ページ
+   ============================================================ */
+function playerHref(kind, name) { return `#/player/${kind}/${encodeURIComponent(name)}`; }
+function playerFile(kind, name) {
+  const list = state.meta?.[kind === "bat" ? "batters" : "pitchers"] || [];
+  const hit = list.find(p => p.name === name);
+  return `${CONFIG.dataDir}/${KIND[kind].dir}/${hit ? hit.file : String(name).replace(/[\s　]+/g, "") + ".csv"}`;
+}
+async function loadPlayer(kind, name) {
+  const path = playerFile(kind, name);
+  if (!state.playerCache.has(path)) state.playerCache.set(path, await loadCSV(path));
+  return state.playerCache.get(path);
+}
+function hasPlayer(kind, name) { return state[kind].some(r => r["選手名"] === name); }
+
+function metricDefs(kind) {
+  return kind === "bat"
+    ? [{ key: "打率", type: "rate3" }, { key: "出塁率", type: "rate3" }, { key: "OPS", type: "rate3" },
+       { key: "安打" }, { key: "本", label: "本塁打" }, { key: "打点" }, { key: "盗塁" }]
+    : [{ key: state.eraKey, label: "防御率", type: "rate2" }, { key: "WHIP", type: "rate2" },
+       { key: "奪三振" }, { key: "アウト数", label: "投球回", type: "ip" }, { key: "勝" }];
+}
+
+function chartSVG(points, type) {
+  const vals = points.map(p => p.v).filter(v => v != null);
+  if (!vals.length) return `<p class="empty">表示できるデータがありません。</p>`;
+  const W = 720, H = 240, L = 48, R = 20, T = 26, B = 30;
+  let max = Math.max(...vals), min = Math.min(0, ...vals);
+  if (max === min) max = min + 1;
+  max = max * 1.1;
+  const x = i => points.length === 1 ? (L + W - R) / 2 : L + i * (W - L - R) / (points.length - 1);
+  const y = v => T + (H - T - B) * (1 - (v - min) / (max - min));
+  const show = v => type === "ip" ? `${Math.floor(v)}` : fmt(v, type);
+  const ticks = [0, 1, 2, 3].map(i => min + (max - min) * i / 3);
+  let d = "", pen = false;
+  points.forEach((p, i) => {
+    if (p.v == null) { pen = false; return; }
+    d += `${pen ? "L" : "M"}${x(i).toFixed(1)},${y(p.v).toFixed(1)}`; pen = true;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="月別推移">
+    ${ticks.map(t => `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}"/>
+      <text class="axis" x="${L - 8}" y="${y(t) + 4}" text-anchor="end">${show(t)}</text>`).join("")}
+    <path class="line" d="${d}"/>
+    ${points.map((p, i) => `<text class="axis" x="${x(i)}" y="${H - 8}" text-anchor="middle">${esc(p.label)}</text>
+      ${p.v == null ? "" : `<circle class="dot" cx="${x(i)}" cy="${y(p.v)}" r="4.5"><title>${esc(p.full)}: ${show(p.v)}</title></circle>
+      <text class="lbl" x="${x(i)}" y="${y(p.v) - 10}">${show(p.v)}</text>`}`).join("")}
+  </svg>`;
+}
+
+async function renderPlayer(kind, name) {
+  const app = document.getElementById("app");
+  app.innerHTML = `<p class="empty">読み込み中…</p>`;
+  const rows = await loadPlayer(kind, name);
+  const games = rows.filter(r => r["区分"] === "試合").reverse();
+  const months = rows.filter(r => r["区分"] === "月計");
+  const total = rows.find(r => r["区分"] === "通算") || {};
+  const other = kind === "bat" ? "pit" : "bat";
+
+  const summary = kind === "bat"
+    ? [["打率", total["打率"], "rate3"], ["本塁打", total["本"]], ["打点", total["打点"]],
+       ["安打", total["安打"]], ["盗塁", total["盗塁"]], ["OPS", total["OPS"], "rate3"], ["試合", String(total["対戦相手"] || "").replace("試合", "")]]
+    : [["防御率", total[state.eraKey], "rate2"], ["勝", total["勝"]], ["敗", total["敗"]],
+       ["投球回", total["投球回"], "text"], ["奪三振", total["奪三振"]], ["WHIP", total["WHIP"], "rate2"], ["登板", String(total["対戦相手"] || "").replace("登板", "")]];
+
+  const defs = metricDefs(kind);
+  if (!state.metric[kind] || !defs.some(d => d.key === state.metric[kind])) state.metric[kind] = defs[0].key;
+  const md = defs.find(d => d.key === state.metric[kind]);
+  const multiYear = new Set(months.map(m => monthYear(m["試合日"]))).size > 1;
+  const points = months.map(m => {
+    let v = num(m[md.key]);
+    if (md.type === "ip" && v != null) v = v / 3;
+    const mm = m["試合日"];
+    return { v, full: mm, label: multiYear ? `${monthYear(mm).slice(2)}/${monthNum(mm)}` : `${monthNum(mm)}月` };
+  });
+
+  const monthCols = kind === "bat"
+    ? [{ key: "試合日", label: "月", type: "text-l" }, { key: "打率", type: "rate3", key2: true },
+       { key: "対戦相手", label: "試合", type: "text" }, { key: "打席" }, { key: "打数" }, { key: "安打" },
+       { key: "本", label: "本塁打" }, { key: "打点" }, { key: "得点" }, { key: "盗塁" },
+       { key: "三振" }, { key: "四球" }, { key: "出塁率", type: "rate3" }, { key: "OPS", type: "rate3" }]
+    : [{ key: "試合日", label: "月", type: "text-l" }, { key: state.eraKey, label: "防御率", type: "rate2", key2: true },
+       { key: "対戦相手", label: "登板", type: "text" }, { key: "投球回", type: "text" },
+       { key: "勝" }, { key: "敗" }, { key: "H" }, { key: "S" }, { key: "奪三振" },
+       { key: "与四球" }, { key: "失点" }, { key: "自責点" }, { key: "WHIP", type: "rate2" }];
+  const gameCols = kind === "bat"
+    ? [{ key: "試合日", label: "日付", type: "text-l" }, { key: "対戦相手", type: "text-l" },
+       { key: "打順" }, { key: "守備", type: "text" }, { key: "打席" }, { key: "打数" },
+       { key: "安打", key2: true }, { key: "二塁打" }, { key: "三塁打" }, { key: "本", label: "本塁打" },
+       { key: "打点" }, { key: "得点" }, { key: "盗塁" }, { key: "三振" }, { key: "四球" }]
+    : [{ key: "試合日", label: "日付", type: "text-l" }, { key: "対戦相手", type: "text-l" },
+       { key: "勝敗", type: "text" }, { key: "投球回", type: "text", key2: true }, { key: "投球数" },
+       { key: "被安打" }, { key: "被本塁打" }, { key: "奪三振" }, { key: "与四球" },
+       { key: "失点" }, { key: "自責点" }];
+
+  app.innerHTML = `
+    <a class="back" href="${kind === "bat" ? "#/batting" : "#/pitching"}">${KIND[kind].label}成績の一覧へ戻る</a>
+    <div class="player-head">
+      <h2>${esc(shortName(name))}</h2>
+      ${hasPlayer(other, name) ? `<nav class="switch" aria-label="成績の種類">
+        <a href="${playerHref("bat", name)}" ${kind === "bat" ? 'aria-current="page"' : ""}>打撃</a>
+        <a href="${playerHref("pit", name)}" ${kind === "pit" ? 'aria-current="page"' : ""}>投球</a></nav>` : ""}
+    </div>
+    <dl class="statline">${summary.map(([l, v, t]) => `<div><dt>${l}</dt><dd>${fmt(v, t)}</dd></div>`).join("")}</dl>
+    <h3 class="sec">月別の推移</h3>
+    <div class="metrics" role="group" aria-label="グラフの項目">${defs.map(d =>
+      `<button type="button" data-metric="${esc(d.key)}" aria-pressed="${d.key === md.key}">${esc(d.label || d.key)}</button>`).join("")}</div>
+    <div class="chart">${chartSVG(points, md.type)}</div>
+    <h3 class="sec">月別成績</h3>
+    ${tableHTML(monthCols, months)}
+    <h3 class="sec">試合別成績</h3>
+    ${tableHTML(gameCols, games)}`;
+  document.title = `${shortName(name)} | ${CONFIG.teamName}`;
+}
+
+/* ============================================================
+   ルーティング
+   ============================================================ */
+async function route() {
+  const h = location.hash;
+  const m = h.match(/^#\/player\/(bat|pit)\/(.+)$/);
+  const tab = m ? m[1] : (h.startsWith("#/pitching") ? "pit" : "bat");
+  document.querySelectorAll("nav.tabs a").forEach(a => {
+    if (a.dataset.tab === tab) a.setAttribute("aria-current", "page");
+    else a.removeAttribute("aria-current");
+  });
+  try {
+    if (m) {
+      await renderPlayer(m[1], decodeURIComponent(m[2]));
+    } else {
+      document.title = `${tab === "bat" ? "打撃" : "投手"}成績 | ${CONFIG.teamName}`;
+      renderList(tab);
+    }
+  } catch (e) { showError(e); }
+}
+function currentKind() {
+  const m = location.hash.match(/^#\/player\/(bat|pit)\//);
+  return m ? m[1] : (location.hash.startsWith("#/pitching") ? "pit" : "bat");
+}
+
+/* ============================================================
+   操作
+   ============================================================ */
+document.getElementById("app").addEventListener("click", e => {
+  const p = e.target.closest("[data-period]");
+  if (p) { state.period = p.dataset.period; route(); return; }
+  const s = e.target.closest("[data-sort]");
+  if (s) {
+    const kind = currentKind(), cur = state.sort[kind], key = s.dataset.sort;
+    state.sort[kind] = cur.key === key ? { key, dir: -cur.dir } : { key, dir: s.dataset.asc === "1" ? 1 : -1 };
+    route(); return;
+  }
+  const mt = e.target.closest("[data-metric]");
+  if (mt) { state.metric[currentKind()] = mt.dataset.metric; route(); }
+});
+document.getElementById("app").addEventListener("change", e => {
+  if (e.target.id === "qual") { state.qualifiedOnly = e.target.checked; route(); }
+});
+window.addEventListener("hashchange", () => { if (state.ready) { route(); window.scrollTo(0, 0); } });
+
+/* ============================================================
+   エラー表示
+   ============================================================ */
+function showError(e) {
+  const local = location.protocol === "file:";
+  document.getElementById("app").innerHTML = `<div class="error">
+    <h2>成績データを読み込めませんでした</h2>
+    <p>${esc(e.message)}</p>
+    ${local
+      ? `<p>ファイルを直接開くとブラウザがデータの読み込みを止めます。index.html のあるフォルダで <code>python -m http.server</code> を実行し、<code>http://localhost:8000</code> を開いてください。</p>`
+      : `<p><code>${esc(CONFIG.dataDir)}</code> フォルダが index.html と同じ場所にあるか確認してください。</p>`}
+  </div>`;
+}
+
+/* ============================================================
+   起動
+   ============================================================ */
+async function init() {
+  document.getElementById("team-name").textContent = `${CONFIG.teamName} 成績`;
+  const d = CONFIG.dataDir;
+  try {
+    await unlock();
+    const [meta, bat, pit, batM, pitM] = await Promise.all([
+      getText(`${d}/meta.json`).then(JSON.parse).catch(() => null),
+      loadCSV(`${d}/打者成績一覧.csv`),
+      loadCSV(`${d}/投手成績一覧.csv`).catch(() => []),
+      loadCSV(`${d}/打者月別成績一覧.csv`).catch(() => []),
+      loadCSV(`${d}/投手月別成績一覧.csv`).catch(() => []),
+    ]);
+    Object.assign(state, { meta, bat, pit, batM, pitM });
+    const keys = Object.keys(pit[0] || {});
+    state.eraKey = keys.find(k => k.startsWith("防御率")) || state.eraKey;
+    state.k9Key = keys.find(k => k.startsWith("奪三振率")) || state.k9Key;
+    state.months = [...new Set([...batM, ...pitM].map(r => r["月"]).concat(Object.keys(meta?.monthly_games || {})))].sort();
+    if (meta) {
+      document.getElementById("updated").textContent = `${meta.updated} 更新　${meta.team_games}試合`;
+    }
+    state.ready = true;
+    route();
+  } catch (e) { showError(e); }
+}
+init();
+</script>
+</body>
+</html>
